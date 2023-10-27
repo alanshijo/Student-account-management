@@ -61,10 +61,7 @@ if (isset($_POST['btn_edit_student'])) {
         $address_check = false;
         $address_error_msg = 'Address is required';
     }
-    if ($student_photo['error'] == 4 || ($student_photo['size'] == 0 && $student_photo['error'] == 0)) {
-        $photo_check = false;
-        $photo_error_msg = 'Photo is required';
-    } else {
+    if (is_uploaded_file($student_photo['tmp_name'])) {
         $valid_extensions = array('image/jpeg', 'image/png');
         if (!in_array($student_photo['type'], $valid_extensions)) {
             $photo_check = false;
@@ -78,12 +75,18 @@ if (isset($_POST['btn_edit_student'])) {
     if ($first_name_check && $last_name_check && $dob_check && $phone_check && $email_check && $address_check && $photo_check) {
         function updateStudentData()
         {
-            global $conn, $student_photo, $first_name, $last_name, $dob, $phone_number, $email, $address;
-            $target_directory = '../Uploads/';
-            move_uploaded_file($student_photo['tmp_name'], $target_directory . $student_photo['name']);
-            $update_student = "UPDATE `tbl_students` SET `first_name`='$first_name',`last_name`='$last_name',`dob`='$dob',`phone_number`='$phone_number',`email_address`='$email',`address`='$address',`student_img`='{$student_photo['name']}',`updated_at`= NOW() WHERE `student_id` = '{$_SESSION['student_id']}'";
+            global $conn, $student_data, $student_photo, $first_name, $last_name, $dob, $phone_number, $email, $address;
+            if (is_uploaded_file($student_photo['tmp_name'])) {
+                $img_file_name = $student_photo['name'];
+                $target_directory = '../Uploads/';
+                move_uploaded_file($student_photo['tmp_name'], $target_directory . $img_file_name);
+            } else {
+                $img_file_name = $student_data['student_img'];
+            }
+            $update_student = "UPDATE `tbl_students` SET `first_name`='$first_name',`last_name`='$last_name',`dob`='$dob',`phone_number`='$phone_number',`email_address`='$email',`address`='$address',`student_img`='$img_file_name',`updated_at`= NOW() WHERE `student_id` = '{$_SESSION['student_id']}'";
             if ($conn->query($update_student)) {
-                header("Location: index.php?success=The student data has been successfully updated");
+                header("Location: index.php");
+                $_SESSION['msg'] = 'The student data has been successfully updated';
             }
         }
         $check_exists = "SELECT * FROM `tbl_students` WHERE `email_address` = '$email'";
@@ -114,6 +117,7 @@ if (isset($_POST['btn_edit_student'])) {
 </head>
 
 <body>
+    <?php require('./navbar.php'); ?>
     <h1 class="mt-5 text-center">Update student details</h1>
     <form action="" method="POST" enctype="multipart/form-data" class="container-fluid mt-5 w-50 shadow-sm p-3 mb-5 bg-body-tertiary rounded">
         <?php if (isset($msg)) { ?>
@@ -182,18 +186,30 @@ if (isset($_POST['btn_edit_student'])) {
         </div>
         <div class="mb-3">
             <label for="student_img" class="form-label">Student Photo</label>
-            <input class="form-control <?= $photo_check ? '' : 'is-invalid'; ?>" type="file" id="student_img" name="student_img">
-            <span class="fst-italic text-muted fw-lighter">The photo size should be less than 5MB and only jpeg, jpg and png formats are supported.</span>
-            <?php if (!$photo_check) { ?>
-                <div class="invalid-feedback">
-                    <?= $photo_error_msg; ?>
+            <div class="row">
+                <div class="col">
+                    <img id="img_preview" src="../Uploads/<?= $student_data['student_img']; ?>" class="img-fluid" alt="<?= $student_data['student_img']; ?>" width="200px" height="200px">
                 </div>
-            <?php } ?>
+                <div class="col">
+                    <input class="form-control <?= $photo_check ? '' : 'is-invalid'; ?>" type="file" id="student_img" name="student_img">
+                    <span class="fst-italic text-muted fw-lighter">The photo size should be less than 5MB and only jpeg, jpg and png formats are supported.</span>
+                    <?php if (!$photo_check) { ?>
+                        <div class="invalid-feedback">
+                            <?= $photo_error_msg; ?>
+                        </div>
+                    <?php } ?>
+                </div>
+            </div>
         </div>
         <div class="d-grid gap-2">
             <button class="btn btn-primary" type="submit" name="btn_edit_student">Update student data</button>
         </div>
     </form>
+    <script>
+        document.querySelector("#student_img").addEventListener('change', (e) => {
+            document.querySelector("#img_preview").src = URL.createObjectURL(e.target.files[0]);
+        })
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
 </body>
 

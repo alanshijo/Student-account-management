@@ -78,7 +78,8 @@ if (isset($_POST['btn_add_student'])) {
             move_uploaded_file($student_photo['tmp_name'], $target_directory . $student_photo['name']);
             $insert_student = "INSERT INTO `tbl_students`(`first_name`, `last_name`, `dob`, `phone_number`, `email_address`, `address`, `student_img`) VALUES ('$first_name','$last_name','$dob','$phone_number','$email','$address','{$student_photo['name']}')";
             if ($conn->query($insert_student)) {
-                header("Location: index.php?success=A student has been added to the record successfully");
+                header("Location: index.php");
+                $_SESSION['msg'] = 'A student has been added to the record successfully';
             }
         }
     }
@@ -96,6 +97,7 @@ if (isset($_POST['btn_add_student'])) {
 </head>
 
 <body>
+    <?php require('./navbar.php'); ?>
     <h1 class="mt-5 text-center">Enter student details</h1>
     <form action="" method="POST" enctype="multipart/form-data" class="container-fluid mt-5 w-50 shadow-sm p-3 mb-5 bg-body-tertiary rounded">
         <?php if (isset($msg)) { ?>
@@ -164,18 +166,30 @@ if (isset($_POST['btn_add_student'])) {
         </div>
         <div class="mb-3">
             <label for="student_img" class="form-label">Student Photo</label>
-            <input class="form-control <?= $photo_check ? '' : 'is-invalid'; ?>" type="file" id="student_img" name="student_img">
-            <span class="fst-italic text-muted fw-lighter">The photo size should be less than 5MB and only jpeg, jpg and png formats are supported.</span>
-            <?php if (!$photo_check) { ?>
-                <div class="invalid-feedback">
-                    <?= $photo_error_msg; ?>
+            <div class="row">
+                <div class="col">
+                    <img id="img_preview" src="https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg" class="img-fluid" alt="" width="150px" height="150px">
                 </div>
-            <?php } ?>
+                <div class="col">
+                    <input class="form-control <?= $photo_check ? '' : 'is-invalid'; ?>" type="file" id="student_img" name="student_img">
+                    <span class="fst-italic text-muted fw-lighter">The photo size should be less than 5MB and only jpeg, jpg and png formats are supported.</span>
+                    <?php if (!$photo_check) { ?>
+                        <div class="invalid-feedback">
+                            <?= $photo_error_msg; ?>
+                        </div>
+                    <?php } ?>
+                </div>
+            </div>
         </div>
         <div class="d-grid gap-2">
             <button class="btn btn-primary" type="submit" name="btn_add_student">Add Student</button>
         </div>
     </form>
+    <script>
+        document.querySelector("#student_img").addEventListener('change', (e) => {
+            document.querySelector("#img_preview").src = URL.createObjectURL(e.target.files[0]);
+        })
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
 </body>
 
