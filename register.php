@@ -1,5 +1,6 @@
 <?php
 include("./config.php");
+session_start();
 $username_check = $password_check = $confirm_password_check = $same_password_check = true;
 if (isset($_POST['btn_register'])) {
     $username = $_POST['username'];
@@ -42,7 +43,8 @@ if (isset($_POST['btn_register'])) {
         } else {
             $sql = "INSERT INTO `tbl_users`(`username`, `password`) VALUES ('$username','$hashed_password')";
             if ($conn->query($sql)) {
-                $msg = 'Account created successfully';
+                header("Location: ./index.php");
+                $_SESSION['msg'] = 'Account created successfully';
             }
         }
     }
@@ -60,7 +62,7 @@ if (isset($_POST['btn_register'])) {
 
 <body>
     <h1 class="mt-5 text-center">Register an account</h1>
-    <form action="" method="POST" class="container-fluid mt-5 w-50 shadow-sm p-3 mb-5 bg-body-tertiary rounded">
+    <form onsubmit="return valid();" id="registerForm" action="" method="POST" class="container-fluid mt-5 w-50 shadow-sm p-3 mb-5 bg-body-tertiary rounded">
         <?php if (isset($msg)) { ?>
             <div class="alert alert-info alert-dismissible fade show" role="alert">
                 <strong><?= $msg; ?></strong>
@@ -71,7 +73,7 @@ if (isset($_POST['btn_register'])) {
             <label for="username" class="form-label text-muted">Username</label>
             <input type="text" class="form-control <?php echo $username_check ? '' : 'is-invalid'; ?>" id="username" name="username">
             <?php if (!$username_check) ?>
-            <div class="invalid-feedback">
+            <div class="invalid-feedback" id="usernameErrorMsg">
                 <?= $username_error_msg; ?>
             </div>
         </div>
@@ -79,15 +81,15 @@ if (isset($_POST['btn_register'])) {
             <label for="password" class="form-label text-muted">Password</label>
             <input type="password" class="form-control <?php echo $password_check ? '' : 'is-invalid'; ?>" id="password" name="password">
             <?php if (!$password_check) ?>
-            <div class="invalid-feedback">
+            <div class="invalid-feedback" id="passwordErrorMsg">
                 <?= $password_error_msg; ?>
             </div>
         </div>
         <div class="mb-3">
             <label for="confirm_password" class="form-label text-muted">Confirm Password</label>
-            <input type="password" class="form-control <?php echo $confirm_password_check ? '' : 'is-invalid'; ?>" id="confirm_password" name="confirm_password">
+            <input type="password" class="form-control <?php echo $confirm_password_check ? '' : 'is-invalid'; ?>" id="confirmPassword" name="confirm_password">
             <?php if (!$confirm_password_check) ?>
-            <div class="invalid-feedback">
+            <div class="invalid-feedback" id="confirmPasswordErrorMsg">
                 <?= $confirm_password_error_msg; ?>
             </div>
         </div>
@@ -98,6 +100,7 @@ if (isset($_POST['btn_register'])) {
             <a href="index.php" class="text-decoration-none">Already registered? Log In</a>
         </div>
     </form>
+    <script src="js/registerScript.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
 </body>
 

@@ -1,6 +1,14 @@
 <?php
 include("../config.php");
 session_start();
+if (!isset($_SESSION['username'])) {
+    header('Location:../index.php');
+}
+if (isset($_POST['sign_out_btn'])) {
+    if (session_destroy()) {
+        header('Location:../index.php');
+    }
+}
 $first_name_check = $last_name_check = $dob_check = $phone_check = $email_check = $address_check = $photo_check = true;
 if (isset($_POST['btn_add_student'])) {
     $first_name = $_POST['first_name'];
@@ -43,7 +51,7 @@ if (isset($_POST['btn_add_student'])) {
     }
     if (empty($email)) {
         $email_check = false;
-        $email_error_msg = 'Phone number is required';
+        $email_error_msg = 'Email address is required';
     } else {
         if (!preg_match('/^[0-9a-zA-Z-_\$#]+@[0-9a-zA-Z-_\$#]+\.[a-zA-Z]{2,5}/', $email)) {
             $email_check = false;
@@ -61,11 +69,11 @@ if (isset($_POST['btn_add_student'])) {
         $valid_extensions = array('image/jpeg', 'image/png');
         if (!in_array($student_photo['type'], $valid_extensions)) {
             $photo_check = false;
-            $photo_error_msg = 'The photo isn\'t in jpg, jpeg or png format';
+            $photo_error_msg = 'The file isn\'t in jpg, jpeg or png format';
         }
-        if ($student_photo['size'] > 5242880) {
+        if ($student_photo['size'] > 2097152) {
             $photo_check = false;
-            $photo_error_msg = "The photo size is larger than 5MB";
+            $photo_error_msg = "The file size is larger than 2MB";
         }
     }
     if ($first_name_check && $last_name_check && $dob_check && $phone_check && $email_check && $address_check && $photo_check) {
@@ -76,7 +84,7 @@ if (isset($_POST['btn_add_student'])) {
         } else {
             $target_directory = '../Uploads/';
             move_uploaded_file($student_photo['tmp_name'], $target_directory . $student_photo['name']);
-            $insert_student = "INSERT INTO `tbl_students`(`first_name`, `last_name`, `dob`, `phone_number`, `email_address`, `address`, `student_img`) VALUES ('$first_name','$last_name','$dob','$phone_number','$email','$address','{$student_photo['name']}')";
+            $insert_student = "INSERT INTO `tbl_students`(`first_name`, `last_name`, `dob`, `phone_number`, `email_address`, `address`, `student_img`,`user_id`) VALUES ('$first_name','$last_name','$dob','$phone_number','$email','$address','{$student_photo['name']}','{$_SESSION['user_id']}')";
             if ($conn->query($insert_student)) {
                 header("Location: index.php");
                 $_SESSION['msg'] = 'A student has been added to the record successfully';
@@ -94,12 +102,27 @@ if (isset($_POST['btn_add_student'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Add Student</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <!-- Font awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 </head>
 
 <body>
-    <?php require('./navbar.php'); ?>
+    <nav class="navbar" style="background-color: #e3f2fd;">
+        <div class="container-fluid">
+            <div class="d-flex align-items-center">
+                <a href="./index.php" class="navbar-brand text-uppercase fw-bold text-danger mx-4"><img src="./assets/images/logo.png" alt="" width="50" height="50"></a>
+                <ol class="breadcrumb mt-3">
+                    <li class="breadcrumb-item"><a href="./index.php" class="text-decoration-none text-danger fw-bold" title="Go home"><i class="fas fa-chevron-left mx-2"></i>Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Add new student</li>
+                </ol>
+            </div>
+            <form action="" method="post" class="d-flex">
+                <button class="btn btn-outline-danger" type="submit" name="sign_out_btn">Sign out</button>
+            </form>
+        </div>
+    </nav>
     <h1 class="mt-5 text-center">Enter student details</h1>
-    <form action="" method="POST" enctype="multipart/form-data" class="container-fluid mt-5 w-50 shadow-sm p-3 mb-5 bg-body-tertiary rounded">
+    <form id="studentForm" onsubmit="return valid();" action="" method="POST" enctype="multipart/form-data" class="container-fluid mt-5 w-50 shadow-sm p-3 mb-5 bg-body-tertiary rounded">
         <?php if (isset($msg)) { ?>
             <div class="alert alert-warning alert-dismissible fade show" role="alert">
                 <strong><?= $msg; ?></strong>
@@ -110,6 +133,7 @@ if (isset($_POST['btn_add_student'])) {
             <div class="col">
                 <label for="first_name" class="form-label">First Name</label>
                 <input type="text" class="form-control <?= $first_name_check ? '' : 'is-invalid'; ?>" placeholder="First name" id="first_name" name="first_name">
+                <div class="invalid-feedback" id="fname_error"></div>
                 <?php if (!$first_name_check) { ?>
                     <div class="invalid-feedback">
                         <?= $first_name_error_msg; ?>
@@ -119,6 +143,7 @@ if (isset($_POST['btn_add_student'])) {
             <div class="col">
                 <label for="last_name" class="form-label">Last Name</label>
                 <input type="text" class="form-control <?= $last_name_check ? '' : 'is-invalid'; ?>" placeholder="Last name" id="last_name" name="last_name">
+                <div class="invalid-feedback" id="lname_error"></div>
                 <?php if (!$last_name_check) { ?>
                     <div class="invalid-feedback">
                         <?= $last_name_error_msg; ?>
@@ -130,6 +155,7 @@ if (isset($_POST['btn_add_student'])) {
             <div class="col">
                 <label for="dob" class="form-label">Date of Birth</label>
                 <input type="date" class="form-control <?= $dob_check ? '' : 'is-invalid'; ?>" placeholder="DD/MM/YYYY" id="dob" name="dob">
+                <div class="invalid-feedback" id="dob_error"></div>
                 <?php if (!$dob_check) { ?>
                     <div class="invalid-feedback">
                         <?= $dob_error_msg; ?>
@@ -139,6 +165,7 @@ if (isset($_POST['btn_add_student'])) {
             <div class="col">
                 <label for="phone_num" class="form-label">Phone Number</label>
                 <input type="tel" class="form-control <?= $phone_check ? '' : 'is-invalid'; ?>" placeholder="10 digit phone number" id="phone_num" name="phone_num">
+                <div class="invalid-feedback" id="phone_error"></div>
                 <?php if (!$phone_check) { ?>
                     <div class="invalid-feedback">
                         <?= $phone_error_msg; ?>
@@ -149,6 +176,7 @@ if (isset($_POST['btn_add_student'])) {
         <div class="mb-3">
             <label for="email" class="form-label">Email Address</label>
             <input type="email" id="email" name="email" placeholder="Your email address" class="form-control <?= $email_check ? '' : 'is-invalid'; ?>">
+            <div class="invalid-feedback" id="email_error"></div>
             <?php if (!$email_check) { ?>
                 <div class="invalid-feedback">
                     <?= $email_error_msg; ?>
@@ -158,6 +186,7 @@ if (isset($_POST['btn_add_student'])) {
         <div class="mb-3">
             <label for="address" class="form-label">Address</label>
             <input type="text" id="address" name="address" placeholder="Permanent address" class="form-control <?= $address_check ? '' : 'is-invalid'; ?>">
+            <div class="invalid-feedback" id="address_error"></div>
             <?php if (!$address_check) { ?>
                 <div class="invalid-feedback">
                     <?= $address_error_msg; ?>
@@ -172,7 +201,8 @@ if (isset($_POST['btn_add_student'])) {
                 </div>
                 <div class="col">
                     <input class="form-control <?= $photo_check ? '' : 'is-invalid'; ?>" type="file" id="student_img" name="student_img">
-                    <span class="fst-italic text-muted fw-lighter">The photo size should be less than 5MB and only jpeg, jpg and png formats are supported.</span>
+                    <span class="fst-italic text-muted fw-lighter">The photo size should be less than 2MB and only jpeg, jpg and png formats are supported.</span>
+                    <div class="invalid-feedback" id="img_error"></div>
                     <?php if (!$photo_check) { ?>
                         <div class="invalid-feedback">
                             <?= $photo_error_msg; ?>
@@ -185,11 +215,7 @@ if (isset($_POST['btn_add_student'])) {
             <button class="btn btn-primary" type="submit" name="btn_add_student">Add Student</button>
         </div>
     </form>
-    <script>
-        document.querySelector("#student_img").addEventListener('change', (e) => {
-            document.querySelector("#img_preview").src = URL.createObjectURL(e.target.files[0]);
-        })
-    </script>
+    <script src="js/script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
 </body>
 

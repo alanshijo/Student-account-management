@@ -1,6 +1,9 @@
 <?php
 include("./config.php");
 session_start();
+if (isset($_SESSION['user_id'], $_SESSION['username'])) {
+    session_destroy();
+}
 $username_check = $password_check = true;
 
 if (isset($_POST['btn_login'])) {
@@ -27,7 +30,7 @@ if (isset($_POST['btn_login'])) {
                 $msg = 'Invalid user credentials';
             }
         } else {
-            $msg = 'User doesn\'t exist';
+            $msg = 'Invalid user credentials';
         }
     }
 }
@@ -44,18 +47,27 @@ if (isset($_POST['btn_login'])) {
 
 <body>
     <h1 class="mt-5 text-center">Sign In</h1>
-    <form action="" method="POST" class="container-fluid w-50 mt-5 shadow-sm p-3 mb-5 bg-body-tertiary rounded">
+    <form onsubmit="return valid();" id="loginForm" action="" method="POST" class="container-fluid w-50 mt-5 shadow-sm p-3 mb-5 bg-body-tertiary rounded">
         <?php if (isset($msg)) { ?>
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 <strong><?= $msg; ?></strong>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         <?php } ?>
+        <?php
+        if (isset($_SESSION['msg'])) { ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <strong><?= $_SESSION['msg']; ?></strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php }
+        unset($_SESSION['msg']);
+        ?>
         <div class="mb-3">
             <label for="username" class="form-label text-muted">Username</label>
             <input type="text" class="form-control <?php echo $username_check ? '' : 'is-invalid'; ?>" id="username" name="username">
             <?php if (!$username_check) ?>
-            <div class="invalid-feedback">
+            <div class="invalid-feedback" id="usernameErrorMsg">
                 <?= $username_error_msg; ?>
             </div>
         </div>
@@ -63,17 +75,18 @@ if (isset($_POST['btn_login'])) {
             <label for="password" class="form-label text-muted">Password</label>
             <input type="password" class="form-control <?php echo $password_check ? '' : 'is-invalid'; ?>" id="password" name="password">
             <?php if (!$password_check) ?>
-            <div class="invalid-feedback">
+            <div class="invalid-feedback" id="passwordErrorMsg">
                 <?= $password_error_msg; ?>
             </div>
         </div>
         <div class="d-grid gap-2 mb-3">
-            <button class="btn btn-success" type="submit" name="btn_login">Log in</button>
+            <button class="btn btn-success" type="submit" name="btn_login" id="btnLogin">Log in</button>
         </div>
         <div class="d-flex justify-content-center">
             <a href="register.php" class="text-decoration-none">Don't have an account? Register here!</a>
         </div>
     </form>
+    <script src="js/script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
 </body>
 
